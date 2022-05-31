@@ -5,7 +5,7 @@ mod init;
 mod profile;
 
 use crate::handleable::{CmdResult, Handleable};
-use crate::rtcontext::RTContext;
+use crate::context::RTContext;
 
 #[derive(Debug, clap::Subcommand)]
 enum Commands {
@@ -19,7 +19,7 @@ impl Handleable for Commands {
         match self {
             Self::Bump(inst) => inst.handle(ctx),
             Self::Init(inst) => inst.handle(ctx),
-            _ => todo!(),
+            Self::Profile(inst) => inst.handle(ctx),
         }
     }
 }

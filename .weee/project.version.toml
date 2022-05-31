@@ -1,0 +1,15 @@
+[parts.major]
+value = "1"
+factory.payload = { default = 0 }
+factory.name = "increment"
+
+
+
+[parts.stage]
+value = "alpha"
+factory.name = "loop"
+factory.payload = ["alpha", "beta"]
+
+[files]
+
+[scripts]

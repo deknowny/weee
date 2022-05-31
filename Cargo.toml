@@ -11,3 +11,11 @@ homepage = "https://github.com/deknowny/weee"
 
 [dependencies]
 clap = { version = "3.1.18", features = ["derive"] }
+serde = "1.0.137"
+serde_derive = "1.0.137"
+toml = "0.5.9"
+toml_edit = "0.14.4"
+linked-hash-map = { version = "0.5.4", features = ["serde_impl"] }
+
+[dev-dependencies]
+tempfile = "3.3.0"

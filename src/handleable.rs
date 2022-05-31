@@ -1,7 +1,7 @@
 use crate::error::CLIError;
-use crate::rtcontext::RTContext;
+use crate::context::RTContext;
 
-pub type CmdResult = Result<(), CLIError>;
+pub type CmdResult<S = ()> = Result<S, CLIError>;
 
 pub trait Handleable {
     fn handle(&self, ctx: &mut RTContext) -> CmdResult;

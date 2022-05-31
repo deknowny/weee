@@ -1,7 +1,7 @@
 use clap;
 
 use crate::handleable::{CmdResult, Handleable};
-use crate::rtcontext::RTContext;
+use crate::context::RTContext;
 
 #[derive(Debug, clap::Args)]
 pub struct Init {

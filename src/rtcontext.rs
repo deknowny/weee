@@ -1,12 +1,11 @@
 use std;
 use std::io::Error;
 
-use crate::handleable::{CmdResult, CLIError};
+use crate::error::CLIError;
+use crate::handleable::CmdResult;
 use crate::show_err;
 
-
 pub struct RTContext {}
-
 
 // initializing
 impl RTContext {
@@ -14,7 +13,6 @@ impl RTContext {
         RTContext {}
     }
 }
-
 
 // Working with files creation/deleting
 impl RTContext {
@@ -30,7 +28,7 @@ impl RTContext {
                     [WeeeDirectoryAlreadyExists]
                     => "An OS error occured while creating a .weee directory",
                     os_error=err
-                )
+                ),
             };
         }
         Ok(())
@@ -69,7 +67,7 @@ impl RTContext {
                     => "An OS error occured while creating rule for the profile",
                     os_error=err,
                     profile=name
-                )
+                ),
             };
         }
 
@@ -86,7 +84,7 @@ impl RTContext {
                     => "An OS error occured while creating storage for the profile",
                     os_error=err,
                     profile=name
-                )
+                ),
             };
         }
 

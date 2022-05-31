@@ -1,6 +1,7 @@
 use clap::Parser;
 
 mod commands;
+mod error;
 mod handleable;
 mod rtcontext;
 

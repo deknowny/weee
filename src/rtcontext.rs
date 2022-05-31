@@ -1,5 +1,4 @@
 use std;
-use std::io::Error;
 
 use crate::error::CLIError;
 use crate::handleable::CmdResult;

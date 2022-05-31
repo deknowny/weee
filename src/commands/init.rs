@@ -1,11 +1,7 @@
-use std;
-
 use clap;
 
-use crate::error::CLIError;
 use crate::handleable::{CmdResult, Handleable};
 use crate::rtcontext::RTContext;
-use crate::show_err;
 
 #[derive(Debug, clap::Args)]
 pub struct Init {

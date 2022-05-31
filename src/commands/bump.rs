@@ -10,7 +10,7 @@ pub struct Bump {
 }
 
 impl Handleable for Bump {
-    fn handle(&self, ctx: &mut RTContext) -> CmdResult {
+    fn handle(&self, _ctx: &mut RTContext) -> CmdResult {
         Ok(())
     }
 }

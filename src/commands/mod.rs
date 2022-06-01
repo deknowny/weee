@@ -38,6 +38,8 @@ impl CLI {
     pub fn handle(self) {
         let mut context = RTContext::new();
         let result = self.command.handle(&mut context);
-        dbg!(&result);
+        if let Err(err) = result {
+            dbg!(&err);
+        }
     }
 }

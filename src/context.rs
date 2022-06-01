@@ -2,6 +2,7 @@ use std;
 
 use toml_edit::Document;
 use linked_hash_map::LinkedHashMap;
+use colored::Colorize;
 
 use crate::error::CLIError;
 use crate::handleable::CmdResult;
@@ -9,7 +10,23 @@ use crate::show_err;
 use crate::config::{ProfileConfig, Factory, Part, IntegerOrString};
 
 
-type Version = std::collections::HashMap<String, IntegerOrString<u64>>;
+type Version = LinkedHashMap<String, IntegerOrString<u64>>;
+
+
+#[derive(Clone, Debug)]
+pub struct ChangedVersion {
+    pub old: Version,
+    pub new: Version,
+}
+
+#[derive(Clone, Debug)]
+pub struct ChangedFile {
+    pub name: String,
+    pub old_part: String,
+    pub old_version: String,
+    pub new_part: String,
+    pub new_version: String
+}
 
 
 pub struct RTContext {
@@ -86,6 +103,7 @@ pub struct ProfileContext<'rtctx> {
     pub rt_context: &'rtctx RTContext,
     pub profile_model: ProfileConfig,
     pub profile_doc: Document,
+    pub profile_name: String
 }
 
 
@@ -127,7 +145,8 @@ impl<'rtctx> ProfileContext<'rtctx> {
             ProfileContext {
                 rt_context,
                 profile_model,
-                profile_doc
+                profile_doc,
+                profile_name: String::from(profile)
             }
         )
     }
@@ -161,7 +180,12 @@ impl<'rtctx> ProfileContext<'rtctx> {
     pub fn fetch_default_of_part(&self, part: &str) -> CmdResult<IntegerOrString<u64>> {
         let existed_part = self.check_part_exists(part)?;
         match existed_part.factory {
-            Factory::Increment { default } => Ok(IntegerOrString::Integer(default.unwrap_or_default())),
+            Factory::Increment(payload) => Ok(IntegerOrString::Integer(
+                match payload {
+                    Some(payload) => payload.default.unwrap_or_default(),
+                    None => 0
+                }
+            )),
             Factory::Loop(chain) => match chain.get(0) {
                 None => show_err!(
                     [LoopFactoryPayloadIsEmpty]
@@ -176,7 +200,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
     pub fn fetch_next_of_part(&self, part: &str) -> CmdResult<IntegerOrString<u64>> {
         let existed_part = self.check_part_exists(part)?;
         match existed_part.factory {
-            Factory::Increment { default } => match existed_part.value {
+            Factory::Increment(payload) => match existed_part.value {
                 IntegerOrString::Integer(val) => Ok(IntegerOrString::Integer(val + 1)),
                 IntegerOrString::String(val) => match val.parse::<u64>() {
                     Err(err) => show_err!(
@@ -187,12 +211,11 @@ impl<'rtctx> ProfileContext<'rtctx> {
                 }
             },
             Factory::Loop(chain) => {
-                let mut chain_iter = chain.iter();
-                for val in chain.iter() {
-                    if *val == existed_part.value {
-                        return match chain_iter.next() {
+                for (pos, elem) in chain.iter().enumerate() {
+                    if *elem == existed_part.value {
+                        return match chain.get(pos + 1) {
                             None => self.fetch_default_of_part(part),
-                            Some(val) => Ok((*val).clone())
+                            Some(next_val) => Ok((*next_val).clone())
                         }
                     }
                 }
@@ -226,22 +249,65 @@ impl<'rtctx> ProfileContext<'rtctx> {
     //     Ok(())
     // }
 
-    pub fn bump_version(&self, requested_part: &str) -> CmdResult<Version> {
-        let part_info = self.check_part_exists(requested_part)?;
-        let mut new_version = std::collections::HashMap::new();
+    fn insert_version_into_string(&self, string: String, version: Version) -> String {
+        let mut new_string = string.clone();
+        for (version_part, version_value) in version.iter() {
+            let temp_val_string;
+            new_string = new_string.replace(format!("{{{}}}", version_part).as_str(), match version_value {
+                IntegerOrString::String(val) => val.as_str(),
+                IntegerOrString::Integer(val) => {
+                    temp_val_string = (*val).to_string();
+                    temp_val_string.as_str()
+                }
+            })
+        }
+        new_string
+    }
 
+    pub fn prepare_replacemts(&self, changed_version: &ChangedVersion) -> CmdResult<Vec<ChangedFile>> {
+        let mut changed_files = vec![];
+
+        for (file_name, file_replacements) in self.profile_model.files.iter() {
+            for file_replacement in file_replacements.iter() {
+                let old_version = self.insert_version_into_string(file_replacement.version.view.clone(), changed_version.old.clone());
+                let old_part = file_replacement.version.placement.replace("{version}", old_version.as_str());
+                let new_version = self.insert_version_into_string(file_replacement.version.view.clone(), changed_version.new.clone());
+                let new_part = file_replacement.version.placement.replace("{version}", new_version.as_str());
+
+                changed_files.push(ChangedFile {
+                    name: (*file_name).clone(),
+                    old_part, new_part,
+                    new_version, old_version,
+                });
+            }
+        }
+        Ok(changed_files)
+    }
+
+    pub fn bump_version(&self, requested_part: &str) -> CmdResult<ChangedVersion> {
+        let part_info = self.check_part_exists(requested_part)?;
+
+        let mut new_version = LinkedHashMap::new();
+        let mut old_version = LinkedHashMap::new();
+
+        // Collect old version
+        for (part_name, part_info) in self.profile_model.parts.iter() {
+            old_version.insert(part_name.clone(), part_info.value.clone());
+        }
+
+        // Collect new version
         match part_info.factory {
-            Factory::Increment { default } => {
+            Factory::Increment(payload) => {
                 let mut self_skipped = false;
                 for (part_name, part_info) in self.profile_model.parts.iter() {
                     if part_name == requested_part {
                         self_skipped = true;
-                        new_version.insert((*part_name).clone(), self.fetch_default_of_part(part_name)?);
+                        new_version.insert((*part_name).clone(), self.fetch_next_of_part(part_name)?);
                         continue;
                     } else if self_skipped {
                         new_version.insert((*part_name).clone(), self.fetch_default_of_part(part_name)?);
                     } else {
-                        new_version.insert((*part_name).clone(), self.fetch_next_of_part(part_name)?);
+                        new_version.insert((*part_name).clone(), part_info.value.clone());
                     }
                 }
             },
@@ -255,7 +321,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
                         if self_part_next == self.fetch_default_of_part(part_name)? {
                             previous_overflowed = true;
                         }
-                        new_version.insert((*part_name).clone(), self.fetch_default_of_part(part_name)?);
+                        new_version.insert((*part_name).clone(), self_part_next);
                         continue;
                     } else if self_skipped {
                         if previous_overflowed {
@@ -275,6 +341,135 @@ impl<'rtctx> ProfileContext<'rtctx> {
                 }
             }
         }
-        Ok(new_version)
+        Ok(ChangedVersion {
+            new: new_version,
+            old: old_version,
+        })
+    }
+
+    pub fn change_files_content(&self, changed_files: &Vec<ChangedFile>, read_only: bool) -> CmdResult {
+
+        // One file can have multiply patterns, bbut this function accepts
+        // a vector of changes (i.e. applied pattern changing)
+        // So if we count "hits" of filename we can detect what pattern it is
+        let mut filenames_hits: std::collections::HashMap<&String, usize> = std::collections::HashMap::new();
+
+        // If a file has beed changed by abother pattern, we should keep new changes
+        let mut changed_files_content = std::collections::HashMap::new();
+
+        for file in changed_files.iter() {
+            let splited_path: Vec<&str> = file.name.split("/").collect();
+            let mut os_based_file_path = std::path::Path::new(&self.rt_context.base_path).join(splited_path[0]);
+            for path_part in &splited_path[1..] {
+               os_based_file_path = os_based_file_path.join(path_part);
+            }
+
+            if !os_based_file_path.exists() {
+                return show_err!(
+                    [NoSuchFileForReplacements]
+                    => "No such file to make version replacements"
+                )
+            }
+
+            let file_content = match changed_files_content.get(&file.name) {
+                Some(content) => content,
+                None => match std::fs::read_to_string(&os_based_file_path) {
+                    Ok(content) => {
+                        changed_files_content.insert(&file.name, content);
+                        &changed_files_content[&file.name]
+                    },
+                    Err(err) => return show_err!(
+                        [CannotReadReplacementsFileContent]
+                        => "Cannot read file to make replacements"
+                    )
+                }
+            };
+
+            let old_version_matches_count = file_content.matches(&file.old_part).count() as u64;
+
+            let this_file_paterns = &self.profile_model.files[&file.name];
+            let current_hits = filenames_hits.entry(&file.name).or_insert(0);
+
+
+            let new_file_content;
+            if let Some(replaces_count) = this_file_paterns[*current_hits].replaces_count {
+                if replaces_count < old_version_matches_count {
+                    return show_err!(
+                        [NotEnoughOldVersionMatches]
+                        => "Count of old version entries is not as supposed"
+                    )
+                }
+                new_file_content = file_content.replacen(&file.old_part, &file.new_part, replaces_count as usize);
+            } else if old_version_matches_count == 0 {
+                return show_err!(
+                    [FileDoesNotContainOldVersion]
+                    => "Changed files has no old version in it's content",
+                    old_match=&file.old_part
+                )
+            } else {
+                new_file_content = file_content.replace(&file.old_part, &file.new_part);
+            }
+
+            if !read_only {
+                if let Err(err) = std::fs::write(&os_based_file_path, &new_file_content) {
+                    return show_err!(
+                        [CannotWriteToFile]
+                        => "Cannot write new version into file"
+                    )
+                };
+            }
+
+            println!(
+                "[{}]: {} -> {}",
+                os_based_file_path.to_str().unwrap_or("<cannot render path>").magenta(),
+                file.old_version.red(),
+                file.new_version.green(),
+            );
+            *current_hits += 1;
+        }
+
+        Ok(())
+    }
+
+    pub fn update_storage(&mut self, changed_version: &ChangedVersion, read_only: bool) -> CmdResult {
+        for (part, new_value) in changed_version.new.iter() {
+            match new_value {
+                IntegerOrString::Integer(val) => self.profile_doc["parts"][part]["value"] = toml_edit::value(*val as i64),
+                IntegerOrString::String(val) => self.profile_doc["parts"][part]["value"] = toml_edit::value(val.clone())
+            };
+        }
+
+        if !read_only {
+            if let Err(err) = std::fs::write(
+                std::path::Path::new(&self.rt_context.base_path).join(".weee").join(format!("{}.version.toml", self.profile_name)),
+                self.profile_doc.to_string()
+            ) {
+                return show_err!(
+                    [CannotWriteToProfileFile]
+                    => "An OS error accured while writing to profile file"
+                )
+            };
+        }
+        Ok(())
+    }
+
+    pub fn version_to_string(&self, version: &Version) -> String {
+        let mut result_string = String::new();
+        for (ind, pair) in version.iter().enumerate() {
+            if ind != 0 {
+                result_string.push('.');
+            }
+            match pair.1 {
+                IntegerOrString::Integer(val) => {
+                    let temp_string = val.to_string();
+                    result_string.push_str(temp_string.as_str())
+                }
+                IntegerOrString::String(val) => {
+                    result_string.push_str(val)
+                }
+            };
+
+        }
+        result_string
     }
 }

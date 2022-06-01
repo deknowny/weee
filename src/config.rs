@@ -18,7 +18,7 @@ pub enum IntegerOrString<T> {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProfileConfig {
     pub parts: LinkedHashMap<String, Part>,
-    pub files: LinkedHashMap<String, Vec<Part>>,
+    pub files: LinkedHashMap<String, Vec<File>>,
     pub scripts: Option<Scripts>
 }
 
@@ -31,23 +31,29 @@ pub struct Part {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(tag = "name", content = "payload", rename_all = "lowercase")]
 pub enum Factory {
-    Increment { default: Option<u64> },
+    Increment(Option<IncrementPayload>),
     Loop(Vec<IntegerOrString<u64>>)
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct File {
-    pub version: Version
+    pub version: FileVersion,
+    pub replaces_count: Option<u64>
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Version {
+pub struct FileVersion {
     pub view: String,
     pub placement: String,
-    pub replaces_count: u64
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Scripts {
     pub after_replacement: Option<String>
+}
+
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct IncrementPayload {
+    pub default: Option<u64>
 }

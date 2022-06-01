@@ -16,8 +16,6 @@ macro_rules! show_err {
                     (stringify!($key), $value.to_string()),
                 )*
             ];
-            dbg!(stringify!($title));
-
             Err(CLIError {
                 title: stringify!($title),
                 description: $description,

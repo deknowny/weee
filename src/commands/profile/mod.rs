@@ -3,8 +3,8 @@ use clap;
 mod add;
 mod remove;
 
-use crate::handleable::{CmdResult, Handleable};
 use crate::context::RTContext;
+use crate::handleable::{CmdResult, Handleable};
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ProfileCommands {
@@ -17,11 +17,10 @@ pub struct Profile {
     command: ProfileCommands,
 }
 
-
 impl Handleable for Profile {
     fn handle(&self, ctx: &mut RTContext) -> CmdResult {
         match &self.command {
-            ProfileCommands::Add(inst) => inst.handle(ctx)
+            ProfileCommands::Add(inst) => inst.handle(ctx),
         }
     }
 }

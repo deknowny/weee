@@ -1,5 +1,5 @@
-use crate::error::CLIError;
 use crate::context::RTContext;
+use crate::error::CLIError;
 
 pub type CmdResult<S = ()> = Result<S, CLIError>;
 

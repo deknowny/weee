@@ -1,17 +1,16 @@
 use std;
 
-use toml_edit::Document;
-use linked_hash_map::LinkedHashMap;
 use colored::Colorize;
+use linked_hash_map::LinkedHashMap;
+use toml_edit::Document;
 
+use crate::config::{Factory, IntegerOrString, Part, ProfileConfig};
+use crate::error::render_toml_error;
 use crate::error::CLIError;
 use crate::handleable::CmdResult;
 use crate::show_err;
-use crate::config::{ProfileConfig, Factory, Part, IntegerOrString};
-
 
 type Version = LinkedHashMap<String, IntegerOrString<u64>>;
-
 
 #[derive(Clone, Debug)]
 pub struct ChangedVersion {
@@ -25,9 +24,8 @@ pub struct ChangedFile {
     pub old_part: String,
     pub old_version: String,
     pub new_part: String,
-    pub new_version: String
+    pub new_version: String,
 }
-
 
 pub struct RTContext {
     base_path: std::ffi::OsString,
@@ -91,66 +89,77 @@ impl RTContext {
     }
 }
 
-
 impl RTContext {
     pub fn fetch_profile_conext(&self, profile: &str) -> CmdResult<ProfileContext> {
         ProfileContext::load(self, profile)
     }
-
 }
 
 pub struct ProfileContext<'rtctx> {
     pub rt_context: &'rtctx RTContext,
     pub profile_model: ProfileConfig,
     pub profile_doc: Document,
-    pub profile_name: String
+    pub profile_name: String,
 }
-
 
 impl<'rtctx> ProfileContext<'rtctx> {
     pub fn load(rt_context: &'rtctx RTContext, profile: &str) -> CmdResult<Self> {
         let filename = format!("{}.version.toml", profile);
-        let profile_path = std::path::Path::new(&rt_context.base_path).join(".weee").join(filename);
+        let profile_path = std::path::Path::new(&rt_context.base_path)
+            .join(".weee")
+            .join(filename);
 
         let profile_content = match std::fs::read_to_string(&profile_path) {
             Ok(content) => content,
-            Err(err) => return match err.kind() {
-                std::io::ErrorKind::NotFound => show_err!(
-                    [NoSuchProfileExists]
-                    => "No such profile exists. Check out whether you typed scope wrongly or deleted the profile file",
-                    profile=profile,
-                    path=match profile_path.to_str() {
-                        Some(val) => val,
-                        None => "<unable to render path>"
-                    }
-                ),
-                _ => show_err!(
-                    [CannotCreateProfileRule]
-                    => "An OS error occured while creating rule for the profile",
-                    os_err=err,
-                    profile=profile
-                ),
+            Err(err) => {
+                return match err.kind() {
+                    std::io::ErrorKind::NotFound => show_err!(
+                        [NoSuchProfileExists]
+                        => "No such profile exists. Check out whether you typed scope wrongly or deleted the profile file",
+                        profile=profile,
+                        path=match profile_path.to_str() {
+                            Some(val) => val,
+                            None => "<unable to render path>"
+                        }
+                    ),
+                    _ => show_err!(
+                        [CannotCreateProfileRule]
+                        => "An OS error occured while creating rule for the profile",
+                        os_err=err,
+                        profile=profile
+                    ),
+                }
             }
         };
 
         let profile_model = match toml::from_str::<ProfileConfig>(&profile_content) {
             Ok(model) => model,
-            Err(err) => panic!("{:#?}", err)
+            Err(err) => {
+                return show_err!(
+                    [TOMLInvalidSyntax]
+                    => "Invalid syntax in profile configuration file",
+                    reason=format!("{}",
+                        render_toml_error(
+                            profile_path.to_str().unwrap_or("<unable to render path>"),
+                            profile_content,
+                            err
+                        )
+                    )
+                )
+            }
         };
 
         let profile_doc = match profile_content.parse::<Document>() {
             Ok(model) => model,
-            Err(err) => panic!("{:#?}", err)
+            Err(_err) => unreachable!(),
         };
 
-        Ok(
-            ProfileContext {
-                rt_context,
-                profile_model,
-                profile_doc,
-                profile_name: String::from(profile)
-            }
-        )
+        Ok(ProfileContext {
+            rt_context,
+            profile_model,
+            profile_doc,
+            profile_name: String::from(profile),
+        })
     }
 }
 
@@ -162,40 +171,23 @@ impl<'rtctx> ProfileContext<'rtctx> {
             None => show_err!(
                 [NoSuchVersionPartExists]
                 => "Such version part does not exist"
-            )
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn check_part_is_incrementable(&self, part: &str) -> CmdResult<u64> {
-        match self.check_part_exists(part)?.value {
-            IntegerOrString::Integer(val) => Ok(val),
-            IntegerOrString::String(val) => match val.parse::<u64>() {
-                Ok(val) => Ok(val),
-                Err(_err) => show_err!(
-                    [CannotCastVersionValueToIntger]
-                    => "Version part is not a valid integer"
-                )
-            }
+            ),
         }
     }
 
     pub fn fetch_default_of_part(&self, part: &str) -> CmdResult<IntegerOrString<u64>> {
         let existed_part = self.check_part_exists(part)?;
         match existed_part.factory {
-            Factory::Increment(payload) => Ok(IntegerOrString::Integer(
-                match payload {
-                    Some(payload) => payload.default.unwrap_or_default(),
-                    None => 0
-                }
-            )),
+            Factory::Increment(payload) => Ok(IntegerOrString::Integer(match payload {
+                Some(payload) => payload.default.unwrap_or_default(),
+                None => 0,
+            })),
             Factory::Loop(chain) => match chain.get(0) {
                 None => show_err!(
                     [LoopFactoryPayloadIsEmpty]
                     => "Loop factory payload cannot be empty"
                 ),
-                Some(val) => Ok((*val).clone())
-
+                Some(val) => Ok((*val).clone()),
             },
         }
     }
@@ -210,22 +202,22 @@ impl<'rtctx> ProfileContext<'rtctx> {
                         [CannotParsePartValueToInteger]
                         => "Version part value is not a valid integer",
                     ),
-                    Ok(val) => Ok(IntegerOrString::Integer(val + 1))
-                }
+                    Ok(val) => Ok(IntegerOrString::Integer(val + 1)),
+                },
             },
             Factory::Loop(chain) => {
                 for (pos, elem) in chain.iter().enumerate() {
                     if *elem == existed_part.value {
                         return match chain.get(pos + 1) {
                             None => self.fetch_default_of_part(part),
-                            Some(next_val) => Ok((*next_val).clone())
-                        }
+                            Some(next_val) => Ok((*next_val).clone()),
+                        };
                     }
                 }
                 return show_err!(
                     [CurrentValueOfLoopedPartDoesNotExist]
                     => "Version part managed by a loop factory with no such part in payload"
-                )
+                );
             }
         }
     }
@@ -256,31 +248,51 @@ impl<'rtctx> ProfileContext<'rtctx> {
         let mut new_string = string.clone();
         for (version_part, version_value) in version.iter() {
             let temp_val_string;
-            new_string = new_string.replace(format!("{{{}}}", version_part).as_str(), match version_value {
-                IntegerOrString::String(val) => val.as_str(),
-                IntegerOrString::Integer(val) => {
-                    temp_val_string = (*val).to_string();
-                    temp_val_string.as_str()
-                }
-            })
+            new_string = new_string.replace(
+                format!("{{{}}}", version_part).as_str(),
+                match version_value {
+                    IntegerOrString::String(val) => val.as_str(),
+                    IntegerOrString::Integer(val) => {
+                        temp_val_string = (*val).to_string();
+                        temp_val_string.as_str()
+                    }
+                },
+            )
         }
         new_string
     }
 
-    pub fn prepare_replacemts(&self, changed_version: &ChangedVersion) -> CmdResult<Vec<ChangedFile>> {
+    pub fn prepare_replacemts(
+        &self,
+        changed_version: &ChangedVersion,
+    ) -> CmdResult<Vec<ChangedFile>> {
         let mut changed_files = vec![];
 
         for (file_name, file_replacements) in self.profile_model.files.iter() {
             for file_replacement in file_replacements.iter() {
-                let old_version = self.insert_version_into_string(file_replacement.version.view.clone(), changed_version.old.clone());
-                let old_part = file_replacement.version.placement.replace("{version}", old_version.as_str());
-                let new_version = self.insert_version_into_string(file_replacement.version.view.clone(), changed_version.new.clone());
-                let new_part = file_replacement.version.placement.replace("{version}", new_version.as_str());
+                let old_version = self.insert_version_into_string(
+                    file_replacement.version.view.clone(),
+                    changed_version.old.clone(),
+                );
+                let old_part = file_replacement
+                    .version
+                    .placement
+                    .replace("{version}", old_version.as_str());
+                let new_version = self.insert_version_into_string(
+                    file_replacement.version.view.clone(),
+                    changed_version.new.clone(),
+                );
+                let new_part = file_replacement
+                    .version
+                    .placement
+                    .replace("{version}", new_version.as_str());
 
                 changed_files.push(ChangedFile {
                     name: (*file_name).clone(),
-                    old_part, new_part,
-                    new_version, old_version,
+                    old_part,
+                    new_part,
+                    new_version,
+                    old_version,
                 });
             }
         }
@@ -305,15 +317,17 @@ impl<'rtctx> ProfileContext<'rtctx> {
                 for (part_name, part_info) in self.profile_model.parts.iter() {
                     if part_name == requested_part {
                         self_skipped = true;
-                        new_version.insert((*part_name).clone(), self.fetch_next_of_part(part_name)?);
+                        new_version
+                            .insert((*part_name).clone(), self.fetch_next_of_part(part_name)?);
                         continue;
                     } else if self_skipped {
-                        new_version.insert((*part_name).clone(), self.fetch_default_of_part(part_name)?);
+                        new_version
+                            .insert((*part_name).clone(), self.fetch_default_of_part(part_name)?);
                     } else {
                         new_version.insert((*part_name).clone(), part_info.value.clone());
                     }
                 }
-            },
+            }
             Factory::Loop(_chain) => {
                 let mut self_skipped = false;
                 let mut previous_overflowed = false;
@@ -329,17 +343,16 @@ impl<'rtctx> ProfileContext<'rtctx> {
                     } else if self_skipped {
                         if previous_overflowed {
                             let new_value = self.fetch_next_of_part(part_name)?;
-                            if new_value == self.fetch_default_of_part(part_name)? {
-                                new_version.insert((*part_name).clone(), new_value);
-                            } else {
+                            if new_value != self.fetch_default_of_part(part_name)? {
                                 previous_overflowed = false;
-                                new_version.insert((*part_name).clone(), part_info.value.clone());
                             }
+                            new_version.insert((*part_name).clone(), new_value);
                         } else {
                             new_version.insert((*part_name).clone(), part_info.value.clone());
                         }
                     } else {
-                        new_version.insert((*part_name).clone(), self.fetch_default_of_part(part_name)?);
+                        new_version
+                            .insert((*part_name).clone(), self.fetch_default_of_part(part_name)?);
                     }
                 }
             }
@@ -350,28 +363,33 @@ impl<'rtctx> ProfileContext<'rtctx> {
         })
     }
 
-    pub fn change_files_content(&self, changed_files: &Vec<ChangedFile>, read_only: bool) -> CmdResult {
-
+    pub fn change_files_content(
+        &self,
+        changed_files: &Vec<ChangedFile>,
+        read_only: bool,
+    ) -> CmdResult {
         // One file can have multiply patterns, bbut this function accepts
         // a vector of changes (i.e. applied pattern changing)
         // So if we count "hits" of filename we can detect what pattern it is
-        let mut filenames_hits: std::collections::HashMap<&String, usize> = std::collections::HashMap::new();
+        let mut filenames_hits: std::collections::HashMap<&String, usize> =
+            std::collections::HashMap::new();
 
         // If a file has beed changed by abother pattern, we should keep new changes
         let mut changed_files_content = std::collections::HashMap::new();
 
         for file in changed_files.iter() {
             let splited_path: Vec<&str> = file.name.split("/").collect();
-            let mut os_based_file_path = std::path::Path::new(&self.rt_context.base_path).join(splited_path[0]);
+            let mut os_based_file_path =
+                std::path::Path::new(&self.rt_context.base_path).join(splited_path[0]);
             for path_part in &splited_path[1..] {
-               os_based_file_path = os_based_file_path.join(path_part);
+                os_based_file_path = os_based_file_path.join(path_part);
             }
 
             if !os_based_file_path.exists() {
                 return show_err!(
                     [NoSuchFileForReplacements]
                     => "No such file to make version replacements"
-                )
+                );
             }
 
             let file_content = match changed_files_content.get(&file.name) {
@@ -380,12 +398,14 @@ impl<'rtctx> ProfileContext<'rtctx> {
                     Ok(content) => {
                         changed_files_content.insert(&file.name, content);
                         &changed_files_content[&file.name]
-                    },
-                    Err(_err) => return show_err!(
-                        [CannotReadReplacementsFileContent]
-                        => "Cannot read file to make replacements"
-                    )
-                }
+                    }
+                    Err(_err) => {
+                        return show_err!(
+                            [CannotReadReplacementsFileContent]
+                            => "Cannot read file to make replacements"
+                        )
+                    }
+                },
             };
 
             let old_version_matches_count = file_content.matches(&file.old_part).count() as u64;
@@ -393,22 +413,22 @@ impl<'rtctx> ProfileContext<'rtctx> {
             let this_file_paterns = &self.profile_model.files[&file.name];
             let current_hits = filenames_hits.entry(&file.name).or_insert(0);
 
-
             let new_file_content;
             if let Some(replaces_count) = this_file_paterns[*current_hits].replaces_count {
                 if replaces_count < old_version_matches_count {
                     return show_err!(
                         [NotEnoughOldVersionMatches]
                         => "Count of old version entries is not as supposed"
-                    )
+                    );
                 }
-                new_file_content = file_content.replacen(&file.old_part, &file.new_part, replaces_count as usize);
+                new_file_content =
+                    file_content.replacen(&file.old_part, &file.new_part, replaces_count as usize);
             } else if old_version_matches_count == 0 {
                 return show_err!(
                     [FileDoesNotContainOldVersion]
                     => "Changed files has no old version in it's content",
                     old_match=&file.old_part
-                )
+                );
             } else {
                 new_file_content = file_content.replace(&file.old_part, &file.new_part);
             }
@@ -418,13 +438,16 @@ impl<'rtctx> ProfileContext<'rtctx> {
                     return show_err!(
                         [CannotWriteToFile]
                         => "Cannot write new version into file"
-                    )
+                    );
                 };
             }
 
             println!(
                 "[{}]: {} => {}",
-                os_based_file_path.to_str().unwrap_or("<cannot render path>").magenta(),
+                os_based_file_path
+                    .to_str()
+                    .unwrap_or("<cannot render path>")
+                    .magenta(),
                 file.old_version.red(),
                 file.new_version.green(),
             );
@@ -434,23 +457,33 @@ impl<'rtctx> ProfileContext<'rtctx> {
         Ok(())
     }
 
-    pub fn update_storage(&mut self, changed_version: &ChangedVersion, read_only: bool) -> CmdResult {
+    pub fn update_storage(
+        &mut self,
+        changed_version: &ChangedVersion,
+        read_only: bool,
+    ) -> CmdResult {
         for (part, new_value) in changed_version.new.iter() {
             match new_value {
-                IntegerOrString::Integer(val) => self.profile_doc["parts"][part]["value"] = toml_edit::value(*val as i64),
-                IntegerOrString::String(val) => self.profile_doc["parts"][part]["value"] = toml_edit::value(val.clone())
+                IntegerOrString::Integer(val) => {
+                    self.profile_doc["parts"][part]["value"] = toml_edit::value(*val as i64)
+                }
+                IntegerOrString::String(val) => {
+                    self.profile_doc["parts"][part]["value"] = toml_edit::value(val.clone())
+                }
             };
         }
 
         if !read_only {
             if let Err(_err) = std::fs::write(
-                std::path::Path::new(&self.rt_context.base_path).join(".weee").join(format!("{}.version.toml", self.profile_name)),
-                self.profile_doc.to_string()
+                std::path::Path::new(&self.rt_context.base_path)
+                    .join(".weee")
+                    .join(format!("{}.version.toml", self.profile_name)),
+                self.profile_doc.to_string(),
             ) {
                 return show_err!(
                     [CannotWriteToProfileFile]
                     => "An OS error accured while writing to profile file"
-                )
+                );
             };
         }
         Ok(())
@@ -468,11 +501,8 @@ impl<'rtctx> ProfileContext<'rtctx> {
                     let temp_string = val.to_string();
                     result_string.push_str(temp_string.as_str())
                 }
-                IntegerOrString::String(val) => {
-                    result_string.push_str(val)
-                }
+                IntegerOrString::String(val) => result_string.push_str(val),
             };
-
         }
         result_string
     }

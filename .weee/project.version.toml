@@ -11,7 +11,7 @@ factory.name = "increment"
 
 
 [parts.patch]
-value = 0
+value = 2
 factory.name = "increment"
 
 
@@ -24,7 +24,7 @@ factory.payload = ["alpha", "beta"]
 [parts.step]
 value = 0
 factory.payload = { default = 0 }
-factory.name = "increment"
+factory.name = "increment
 
 [[files."req.txt"]]
 version.view = "{major}.{minor}.{patch}-{stage}{step}"

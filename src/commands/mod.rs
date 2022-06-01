@@ -1,13 +1,13 @@
 use clap;
-use terminal_size::{Width, Height, terminal_size};
 use colored::Colorize;
+use terminal_size::{terminal_size, Height, Width};
 
 mod bump;
 mod init;
 mod profile;
 
-use crate::handleable::{CmdResult, Handleable};
 use crate::context::RTContext;
+use crate::handleable::{CmdResult, Handleable};
 
 #[derive(Debug, clap::Subcommand)]
 enum Commands {
@@ -46,21 +46,17 @@ impl CLI {
             let header;
             if let Some((Width(w), Height(_))) = term_size {
                 let header_block = format!(" [ {} ] ", err.title.red());
-                let line = std::iter::repeat("-").take((w as usize - err.title.len() - 6) / 2).collect::<String>();
-                header = format!(
-                    "{}{}{}",
-                    line, header_block, line
-                )
+                let line = std::iter::repeat("-")
+                    .take((w as usize - err.title.len() - 6) / 2)
+                    .collect::<String>();
+                header = format!("{}{}{}", line, header_block, line)
             } else {
                 header = format!("[ {} ]", err.title.red())
             }
 
             let mut payload = String::new();
             for (key, value) in err.payload.iter() {
-                payload.push_str(format!(
-                    "\n [{}]: {}",
-                    key.magenta(), value
-                ).as_str());
+                payload.push_str(format!("\n [{}]: {}", key.magenta(), value).as_str());
             }
 
             eprintln!("{}\n => {}\n{}", header, err.description.yellow(), payload);

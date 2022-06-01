@@ -1,4 +1,6 @@
 use clap;
+use terminal_size::{Width, Height, terminal_size};
+use colored::Colorize;
 
 mod bump;
 mod init;
@@ -38,8 +40,30 @@ impl CLI {
     pub fn handle(self) {
         let mut context = RTContext::new();
         let result = self.command.handle(&mut context);
+
         if let Err(err) = result {
-            dbg!(&err);
+            let term_size = terminal_size();
+            let header;
+            if let Some((Width(w), Height(_))) = term_size {
+                let header_block = format!(" [ {} ] ", err.title.red());
+                let line = std::iter::repeat("-").take((w as usize - err.title.len() - 6) / 2).collect::<String>();
+                header = format!(
+                    "{}{}{}",
+                    line, header_block, line
+                )
+            } else {
+                header = format!("[ {} ]", err.title.red())
+            }
+
+            let mut payload = String::new();
+            for (key, value) in err.payload.iter() {
+                payload.push_str(format!(
+                    "\n [{}]: {}",
+                    key.magenta(), value
+                ).as_str());
+            }
+
+            eprintln!("{}\n => {}\n{}", header, err.description.yellow(), payload);
         }
     }
 }

@@ -117,16 +117,18 @@ impl<'rtctx> ProfileContext<'rtctx> {
             Err(err) => return match err.kind() {
                 std::io::ErrorKind::NotFound => show_err!(
                     [NoSuchProfileExists]
-                    => "No such profile exists",
-                    profile_path=match profile_path.to_str() {
+                    => "No such profile exists. Check out whether you typed scope wrongly or deleted the profile file",
+                    profile=profile,
+                    path=match profile_path.to_str() {
                         Some(val) => val,
-                        None => ".."
+                        None => "<unable to render path>"
                     }
                 ),
                 _ => show_err!(
                     [CannotCreateProfileRule]
                     => "An OS error occured while creating rule for the profile",
-                    os_err=err
+                    os_err=err,
+                    profile=profile
                 ),
             }
         };
@@ -164,12 +166,13 @@ impl<'rtctx> ProfileContext<'rtctx> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn check_part_is_incrementable(&self, part: &str) -> CmdResult<u64> {
         match self.check_part_exists(part)?.value {
             IntegerOrString::Integer(val) => Ok(val),
             IntegerOrString::String(val) => match val.parse::<u64>() {
                 Ok(val) => Ok(val),
-                Err(err) => show_err!(
+                Err(_err) => show_err!(
                     [CannotCastVersionValueToIntger]
                     => "Version part is not a valid integer"
                 )
@@ -200,10 +203,10 @@ impl<'rtctx> ProfileContext<'rtctx> {
     pub fn fetch_next_of_part(&self, part: &str) -> CmdResult<IntegerOrString<u64>> {
         let existed_part = self.check_part_exists(part)?;
         match existed_part.factory {
-            Factory::Increment(payload) => match existed_part.value {
+            Factory::Increment(_payload) => match existed_part.value {
                 IntegerOrString::Integer(val) => Ok(IntegerOrString::Integer(val + 1)),
                 IntegerOrString::String(val) => match val.parse::<u64>() {
-                    Err(err) => show_err!(
+                    Err(_err) => show_err!(
                         [CannotParsePartValueToInteger]
                         => "Version part value is not a valid integer",
                     ),
@@ -297,7 +300,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
 
         // Collect new version
         match part_info.factory {
-            Factory::Increment(payload) => {
+            Factory::Increment(_payload) => {
                 let mut self_skipped = false;
                 for (part_name, part_info) in self.profile_model.parts.iter() {
                     if part_name == requested_part {
@@ -311,7 +314,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
                     }
                 }
             },
-            Factory::Loop(chain) => {
+            Factory::Loop(_chain) => {
                 let mut self_skipped = false;
                 let mut previous_overflowed = false;
                 for (part_name, part_info) in self.profile_model.parts.iter().rev() {
@@ -378,7 +381,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
                         changed_files_content.insert(&file.name, content);
                         &changed_files_content[&file.name]
                     },
-                    Err(err) => return show_err!(
+                    Err(_err) => return show_err!(
                         [CannotReadReplacementsFileContent]
                         => "Cannot read file to make replacements"
                     )
@@ -411,7 +414,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
             }
 
             if !read_only {
-                if let Err(err) = std::fs::write(&os_based_file_path, &new_file_content) {
+                if let Err(_err) = std::fs::write(&os_based_file_path, &new_file_content) {
                     return show_err!(
                         [CannotWriteToFile]
                         => "Cannot write new version into file"
@@ -420,7 +423,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
             }
 
             println!(
-                "[{}]: {} -> {}",
+                "[{}]: {} => {}",
                 os_based_file_path.to_str().unwrap_or("<cannot render path>").magenta(),
                 file.old_version.red(),
                 file.new_version.green(),
@@ -440,7 +443,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
         }
 
         if !read_only {
-            if let Err(err) = std::fs::write(
+            if let Err(_err) = std::fs::write(
                 std::path::Path::new(&self.rt_context.base_path).join(".weee").join(format!("{}.version.toml", self.profile_name)),
                 self.profile_doc.to_string()
             ) {
@@ -453,6 +456,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn version_to_string(&self, version: &Version) -> String {
         let mut result_string = String::new();
         for (ind, pair) in version.iter().enumerate() {

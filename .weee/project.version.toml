@@ -24,8 +24,8 @@ factory.payload = ["alpha", "beta"]
 [parts.step]
 value = 0
 factory.payload = { default = 0 }
-factory.name = "increment
+factory.name = "increment"
 
-[[files."req.txt"]]
+[[files."req.txt"]
 version.view = "{major}.{minor}.{patch}-{stage}{step}"
 version.placement = "foobar=={version}"

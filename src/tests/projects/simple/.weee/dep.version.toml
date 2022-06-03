@@ -1,0 +1,35 @@
+[parts.major]
+value = 0
+factory.payload = { default = 0 }
+factory.name = "increment"
+
+
+[parts.minor]
+value = 1
+factory.name = "increment"
+
+
+[parts.patch]
+value = 0
+factory.name = "increment"
+
+
+[parts.stage]
+value = "alpha"
+factory.name = "loop"
+factory.payload = ["alpha", "beta"]
+
+
+[parts.step]
+value = 0
+factory.name = "increment"
+
+
+[[files."req.txt"]]
+version.view = "{major}.{minor}.{patch}-{stage}{step}"
+version.placement = "dep=={version}"
+
+
+[[files."req.txt"]]
+version.view = "{major}.{minor}.{patch}-{stage}{step}"
+version.placement = "fdep-another-style=={version}"

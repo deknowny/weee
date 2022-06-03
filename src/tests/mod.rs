@@ -1,2 +1,3 @@
-mod command;
-mod hello;
+pub mod commands;
+pub mod hello;
+pub mod utils;

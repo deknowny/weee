@@ -19,8 +19,9 @@ colored = "2.0.0"
 terminal_size = "0.1.17"
 
 [dev-dependencies]
-tempfile = "3.3.0"
 pre-commit = "0.5.2"
+tempfile = "3.3.0"
+fs_extra = "1.2.0"
 
 [package.metadata.precommit]
-fmt = "cargo fmt"
+"Formatting style" = "cargo fmt"

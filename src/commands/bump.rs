@@ -40,6 +40,7 @@ impl Handleable for Bump {
         let prepared_changed_files = profile_ctx.prepare_replacemts(&changed_version)?;
         profile_ctx.change_files_content(&prepared_changed_files, self.read_only)?;
         profile_ctx.update_storage(&changed_version, self.read_only)?;
+        profile_ctx.execute_afterword_hooks(&changed_version)?;
 
         Ok(())
     }

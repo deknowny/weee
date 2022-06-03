@@ -6,8 +6,7 @@ use linked_hash_map::LinkedHashMap;
 use toml_edit::Document;
 
 use crate::config::{Factory, IntegerOrString, Part, ProfileConfig};
-use crate::error::render_toml_error;
-use crate::error::CLIError;
+use crate::error::{CLIError};
 use crate::handleable::CmdResult;
 use crate::show_err;
 
@@ -133,26 +132,20 @@ impl<'rtctx> ProfileContext<'rtctx> {
             }
         };
 
-        let profile_model = match toml::from_str::<ProfileConfig>(&profile_content) {
-            Ok(model) => model,
-            Err(err) => {
-                return show_err!(
-                    [TOMLInvalidSyntax]
-                    => "Invalid syntax in profile configuration file",
-                    reason=format!("{}",
-                        render_toml_error(
-                            profile_path.to_str().unwrap_or("<unable to render path>"),
-                            profile_content,
-                            err
-                        )
-                    )
-                )
-            }
-        };
 
         let profile_doc = match profile_content.parse::<Document>() {
             Ok(model) => model,
-            Err(_err) => unreachable!(),
+            Err(err) => return show_err!(
+                [TOMLInvalidSyntax]
+                => "Invalid syntax in a profile configuration file",
+                path=profile_path.to_str().unwrap_or("<unable to render path>"),
+                error=err
+            )
+        };
+
+        let profile_model = match toml::from_str::<ProfileConfig>(&profile_content) {
+            Ok(model) => model,
+            Err(err) => unreachable!("It's a bug, please, report")
         };
 
         Ok(ProfileContext {
@@ -590,5 +583,99 @@ impl<'rtctx> ProfileContext<'rtctx> {
                 }
             }
         }
+    }
+}
+
+// hooks
+impl<'rtctx> ProfileContext<'rtctx> {
+
+    fn process_args(&self, args: &Vec<String>, changed_version: &ChangedVersion) -> CmdResult<Vec<String>> {
+        let mut new_args = vec![];
+        for (ind, arg) in args.iter().enumerate() {
+            if arg.starts_with("!ASK:") {
+                let split_data = arg.split_once(":");
+                if let Some((_, prompt)) = split_data {
+                    print!("===> [{}]: ", prompt.magenta());
+                    if let Err(_err) = std::io::stdout().flush() {
+                        return show_err!(
+                            [CannotFlushStdout]
+                            => "Cannot flush stdout"
+                        );
+                    };
+                    let mut new_value = String::new();
+                    if let Err(_err) = std::io::stdin().read_line(&mut new_value) {
+                        return show_err!(
+                            [CannotReadNewValueFromStdin]
+                            => "Cannot get an input for asked value"
+                        );
+                    }
+                    new_value.truncate(new_value.len() - 1);
+                    new_args.push(new_value);
+                } else {
+                    new_args.push(arg.clone());
+                }
+            } else if arg.starts_with("!FORMAT:") {
+                let split_data = arg.split_once(":");
+                if let Some((_, formatable)) = split_data {
+                    let mut new_value = formatable.to_string();
+                    for (part, value) in changed_version.old.iter() {
+                        new_value = new_value.replace(
+                            format!("{{old.{}}}", part).as_str(),
+                            value.to_string().as_str()
+                        )
+                    }
+                    for (part, value) in changed_version.new.iter() {
+                        new_value = new_value.replace(
+                            format!("{{new.{}}}", part).as_str(),
+                            value.to_string().as_str()
+                        )
+                    }
+                    new_args.push(new_value);
+                } else {
+                    new_args.push(arg.clone());
+                }
+            } else {
+                new_args.push(arg.clone());
+            }
+        }
+        Ok(new_args)
+    }
+
+    pub fn execute_afterword_hooks(&self, changed_version: &ChangedVersion) -> CmdResult {
+        if let Some(hooks) = &self.profile_model.hooks {
+            if let Some(afterwords) = &hooks.afterwords {
+                println!("\n \u{1F50D} Founded some afterwords hooks...");
+                for (cmd_name, args) in afterwords {
+                    println!("=> Executing: {}", cmd_name.cyan());
+                    let local_args = self.process_args(&args, &changed_version)?;
+
+                    let executed_command = std::process::Command::new(local_args[0].clone())
+                        .args(&local_args[1..])
+                        .stdout(std::process::Stdio::piped())
+                        .stdout(std::process::Stdio::piped())
+                        .output();
+
+                    match executed_command {
+                        Err(err) => return show_err!(
+                            [CannotExecuteSubprocess]
+                            => "An error occured while executing subproccess",
+                            error=err,
+                            step=cmd_name
+                        ),
+                        Ok(cmd) => {
+                            let stdout_output = String::from_utf8_lossy(&cmd.stdout);
+                            print!("{}", &stdout_output.bright_black());
+                            if cmd.stderr.len() > 0 {
+                                eprintln!(" \u{1F4A5} Oops! There is an error output too");
+                                std::io::stderr().write_all(&cmd.stderr).unwrap();
+                            }
+                        }
+                    };
+                }
+                println!("\n \u{2728} Done executing afterword scripts!");
+            }
+        }
+
+        Ok(())
     }
 }

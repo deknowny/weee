@@ -1,17 +1,17 @@
 [parts.major]
-value = 6
+value = 26
 factory.payload = { default = 0 }
 factory.name = "increment"
 
 
 [parts.minor]
-value = 13
+value = 0
 factory.payload = { default = 0 }
 factory.name = "increment"
 
 
 [parts.patch]
-value = 67
+value = 0
 factory.name = "increment"
 
 
@@ -22,10 +22,14 @@ factory.payload = ["alpha", "beta"]
 
 
 [parts.step]
-value = 10
+value = 0
 factory.payload = { default = 0 }
 factory.name = "increment"
 
 [[files."req.txt"]]
 version.view = "{major}.{minor}.{patch}-{stage}{step}"
 version.placement = "foobar=={version}"
+
+[hooks.afterwords]
+"Echo something" = ["echo", "!ASK:Enter what to echo"]
+"Echo something" = ["echo", "New version is: {new.major}.{new.minor}.{new.patch}"]

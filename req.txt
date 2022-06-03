@@ -1,1 +1,1 @@
-foobar==6.13.67-alpha10
+foobar==26.0.0-alpha0

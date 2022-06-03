@@ -9,11 +9,20 @@ pub enum IntegerOrString<T> {
     Integer(T),
 }
 
+impl<T: std::string::ToString> std::string::ToString for IntegerOrString<T> {
+    fn to_string(&self) -> String {
+        match &self {
+            IntegerOrString::Integer(val) => val.to_string(),
+            IntegerOrString::String(val) => val.to_string(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProfileConfig {
     pub parts: LinkedHashMap<String, Part>,
     pub files: LinkedHashMap<String, Vec<File>>,
-    pub scripts: Option<Scripts>,
+    pub hooks: Option<Hooks>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -42,8 +51,8 @@ pub struct FileVersion {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Scripts {
-    pub after_replacement: Option<String>,
+pub struct Hooks {
+    pub afterwords: Option<LinkedHashMap<String, Vec<String>>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

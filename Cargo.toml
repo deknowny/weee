@@ -21,3 +21,8 @@ terminal_size = "0.1.17"
 
 [dev-dependencies]
 tempfile = "3.3.0"
+pre-commit = "0.5.2"
+
+[package.metadata.precommit]
+fmt = "cargo fmt"
+fix = "cargo fix --allow-dirty"

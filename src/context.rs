@@ -6,7 +6,7 @@ use linked_hash_map::LinkedHashMap;
 use toml_edit::Document;
 
 use crate::config::{Factory, IntegerOrString, Part, ProfileConfig};
-use crate::error::{CLIError};
+use crate::error::CLIError;
 use crate::handleable::CmdResult;
 use crate::show_err;
 
@@ -132,20 +132,21 @@ impl<'rtctx> ProfileContext<'rtctx> {
             }
         };
 
-
         let profile_doc = match profile_content.parse::<Document>() {
             Ok(model) => model,
-            Err(err) => return show_err!(
-                [TOMLInvalidSyntax]
-                => "Invalid syntax in a profile configuration file",
-                path=profile_path.to_str().unwrap_or("<unable to render path>"),
-                error=err
-            )
+            Err(err) => {
+                return show_err!(
+                    [TOMLInvalidSyntax]
+                    => "Invalid syntax in a profile configuration file",
+                    path=profile_path.to_str().unwrap_or("<unable to render path>"),
+                    error=err
+                )
+            }
         };
 
         let profile_model = match toml::from_str::<ProfileConfig>(&profile_content) {
             Ok(model) => model,
-            Err(err) => unreachable!("It's a bug, please, report")
+            Err(_err) => unreachable!("It's a bug, please, report"),
         };
 
         Ok(ProfileContext {
@@ -588,10 +589,13 @@ impl<'rtctx> ProfileContext<'rtctx> {
 
 // hooks
 impl<'rtctx> ProfileContext<'rtctx> {
-
-    fn process_args(&self, args: &Vec<String>, changed_version: &ChangedVersion) -> CmdResult<Vec<String>> {
+    fn process_args(
+        &self,
+        args: &Vec<String>,
+        changed_version: &ChangedVersion,
+    ) -> CmdResult<Vec<String>> {
         let mut new_args = vec![];
-        for (ind, arg) in args.iter().enumerate() {
+        for (_ind, arg) in args.iter().enumerate() {
             if arg.starts_with("!ASK:") {
                 let split_data = arg.split_once(":");
                 if let Some((_, prompt)) = split_data {
@@ -621,13 +625,13 @@ impl<'rtctx> ProfileContext<'rtctx> {
                     for (part, value) in changed_version.old.iter() {
                         new_value = new_value.replace(
                             format!("{{old.{}}}", part).as_str(),
-                            value.to_string().as_str()
+                            value.to_string().as_str(),
                         )
                     }
                     for (part, value) in changed_version.new.iter() {
                         new_value = new_value.replace(
                             format!("{{new.{}}}", part).as_str(),
-                            value.to_string().as_str()
+                            value.to_string().as_str(),
                         )
                     }
                     new_args.push(new_value);
@@ -656,12 +660,14 @@ impl<'rtctx> ProfileContext<'rtctx> {
                         .output();
 
                     match executed_command {
-                        Err(err) => return show_err!(
-                            [CannotExecuteSubprocess]
-                            => "An error occured while executing subproccess",
-                            error=err,
-                            step=cmd_name
-                        ),
+                        Err(err) => {
+                            return show_err!(
+                                [CannotExecuteSubprocess]
+                                => "An error occured while executing subproccess",
+                                error=err,
+                                step=cmd_name
+                            )
+                        }
                         Ok(cmd) => {
                             let stdout_output = String::from_utf8_lossy(&cmd.stdout);
                             print!("{}", &stdout_output.bright_black());

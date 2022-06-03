@@ -1,6 +1,3 @@
-use toml;
-use std::error::Error;
-
 #[derive(Debug)]
 pub struct CLIError {
     pub title: &'static str,

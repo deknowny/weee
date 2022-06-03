@@ -1,0 +1,26 @@
+name: Run tests and deploy on tags
+
+on:
+  push:
+  pull_request:
+
+
+jobs:
+  tests:
+    name: Run unit-tests
+    strategy:
+      matrix:
+        platform: ["ubuntu-18.04", "macos-12", "windows-2022"]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test --release
+
+

@@ -651,12 +651,18 @@ impl<'rtctx> ProfileContext<'rtctx> {
                             print!("{}", &stdout_output.bright_black());
                             if cmd.stderr.len() > 0 {
                                 eprintln!(" \u{1F4A5} Oops! There is an error output too");
-                                std::io::stderr().write_all(&cmd.stderr).unwrap();
+                                let stderr_output = String::from_utf8_lossy(&cmd.stderr);
+                                return show_err!(
+                                    [SubproccessCallFailed]
+                                    => "An error occured while executing subproccess",
+                                    stderr=stderr_output,
+                                    command=cmd_name
+                                )
                             }
                         }
                     };
                 }
-                println!("\n \u{2728} Done executing afterword scripts!");
+                println!("\n \u{2728} Done executing afterwords scripts!");
             }
         }
 

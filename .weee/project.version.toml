@@ -1,5 +1,5 @@
 [parts.major]
-value = 26
+value = 32
 factory.payload = { default = 0 }
 factory.name = "increment"
 
@@ -32,4 +32,4 @@ version.placement = "foobar=={version}"
 
 [hooks.afterwords]
 "Echo something" = ["echo", "!ASK:Enter what to echo"]
-"Echo something" = ["echo", "New version is: {new.major}.{new.minor}.{new.patch}"]
+"Echo version" = ["echo", "!FORMAT:New version is: {new.major}.{new.minor}.{new.patch}"]

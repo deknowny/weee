@@ -1,4 +1,5 @@
 use std;
+use std::io::{Write};
 
 use colored::Colorize;
 use linked_hash_map::LinkedHashMap;
@@ -506,4 +507,89 @@ impl<'rtctx> ProfileContext<'rtctx> {
         }
         result_string
     }
+}
+
+
+impl<'rtctx> ProfileContext<'rtctx> {
+
+    fn show_tip(&self, prompt: &'static str) {
+        eprintln!(" \u{1F4A5} Oh! {}", prompt);
+    }
+
+    pub fn ask_another_version(&self) -> CmdResult<Version> {
+        let mut new_version = LinkedHashMap::new();
+        for (part_name, part_info) in self.profile_model.parts.iter() {
+            new_version.insert(
+                part_name.clone(),
+                self.ask_for_part(&part_name, &part_info)?
+            );
+        }
+
+        Ok(new_version)
+    }
+
+    fn ask_for_part(&self, part_name: &str, part_info: &Part) -> CmdResult<IntegerOrString<u64>> {
+        loop {
+            let mut new_part_value = String::new();
+            print!(
+                "[{} {}]: ",
+                part_name.magenta(),
+                format!(
+                    "({})",
+                    match &part_info.value {
+                        IntegerOrString::Integer(val) => val.to_string(),
+                        IntegerOrString::String(val) => val.to_string(),
+                    }.yellow()
+                ).bright_black()
+            );
+            if let Err(_err) = std::io::stdout().flush() {
+                return show_err!(
+                    [CannotFlushStdout]
+                    => "Cannot flush stdout"
+                )
+            };
+            if let Err(_err) = std::io::stdin().read_line(&mut new_part_value) {
+                return show_err!(
+                    [CannotReadNewValueFromStdin]
+                    => "Cannot get an input for new part value"
+                )
+            }
+            new_part_value.truncate(new_part_value.len() - 1);
+
+            match &part_info.factory {
+                Factory::Increment(_payload) => {
+                    match new_part_value.parse::<u64>() {
+                        Ok(value) => return Ok(
+                            IntegerOrString::Integer(value)
+                        ),
+                        Err(_err) => {
+                            self.show_tip(
+                                "Cannot treat your input as an integer (this part uses increment factory so it's required to be integer)"
+                            )
+                        }
+                    }
+                },
+                Factory::Loop(payload) => {
+                    for available_part in payload.iter() {
+                        let stringified_part = match available_part {
+                            IntegerOrString::Integer(val) => val.to_string(),
+                            IntegerOrString::String(val) => val.to_string(),
+                        };
+                        if stringified_part == new_part_value {
+                            return Ok(match available_part {
+                                IntegerOrString::Integer(_) => IntegerOrString::Integer(
+                                    new_part_value.parse::<u64>().expect("It's a bug in type convereting, please, report an issue")
+                                ),
+                                IntegerOrString::String(val) => IntegerOrString::String(val.clone()),
+                            })
+                        }
+                    }
+                    self.show_tip(
+                        "No such part is available from loop's factory payload. Check if you typed everything correctly"
+                    );
+                }
+            }
+        }
+    }
+
 }

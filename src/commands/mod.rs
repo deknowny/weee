@@ -4,8 +4,8 @@ use terminal_size::{terminal_size, Height, Width};
 
 mod bump;
 mod init;
-mod profile;
 mod r#move;
+mod profile;
 
 use crate::context::RTContext;
 use crate::handleable::{CmdResult, Handleable};
@@ -15,7 +15,7 @@ enum Commands {
     Bump(bump::Bump),
     Profile(profile::Profile),
     Init(init::Init),
-    Move(r#move::Move)
+    Move(r#move::Move),
 }
 
 impl Handleable for Commands {

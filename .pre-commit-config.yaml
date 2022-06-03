@@ -1,0 +1,15 @@
+repos:
+  - repo: local
+    hooks:
+
+      - id: fmt
+        name: Format code style
+        entry: cargo fmt
+        pass_filenames: false
+        language: system
+
+      - id: fix
+        name: Fix warnings
+        entry: cargo fix --allow-dirty
+        language: system
+        pass_filenames: false

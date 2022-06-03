@@ -1,5 +1,5 @@
 use std;
-use std::io::{Write};
+use std::io::Write;
 
 use colored::Colorize;
 use linked_hash_map::LinkedHashMap;
@@ -509,9 +509,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
     }
 }
 
-
 impl<'rtctx> ProfileContext<'rtctx> {
-
     fn show_tip(&self, prompt: &'static str) {
         eprintln!(" \u{1F4A5} Oh! {}", prompt);
     }
@@ -521,7 +519,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
         for (part_name, part_info) in self.profile_model.parts.iter() {
             new_version.insert(
                 part_name.clone(),
-                self.ask_for_part(&part_name, &part_info)?
+                self.ask_for_part(&part_name, &part_info)?,
             );
         }
 
@@ -539,20 +537,22 @@ impl<'rtctx> ProfileContext<'rtctx> {
                     match &part_info.value {
                         IntegerOrString::Integer(val) => val.to_string(),
                         IntegerOrString::String(val) => val.to_string(),
-                    }.yellow()
-                ).bright_black()
+                    }
+                    .yellow()
+                )
+                .bright_black()
             );
             if let Err(_err) = std::io::stdout().flush() {
                 return show_err!(
                     [CannotFlushStdout]
                     => "Cannot flush stdout"
-                )
+                );
             };
             if let Err(_err) = std::io::stdin().read_line(&mut new_part_value) {
                 return show_err!(
                     [CannotReadNewValueFromStdin]
                     => "Cannot get an input for new part value"
-                )
+                );
             }
             new_part_value.truncate(new_part_value.len() - 1);
 
@@ -591,5 +591,4 @@ impl<'rtctx> ProfileContext<'rtctx> {
             }
         }
     }
-
 }

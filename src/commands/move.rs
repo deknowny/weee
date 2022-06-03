@@ -2,8 +2,7 @@ use clap;
 
 use linked_hash_map::LinkedHashMap;
 
-
-use crate::context::{RTContext, ChangedVersion};
+use crate::context::{ChangedVersion, RTContext};
 use crate::handleable::{CmdResult, Handleable};
 
 /// Move profile's version to custom value
@@ -40,7 +39,7 @@ impl Handleable for Move {
         }
         let changed_version = ChangedVersion {
             new: new_version,
-            old: old_version
+            old: old_version,
         };
 
         let prepared_changed_files = profile_ctx.prepare_replacemts(&changed_version)?;

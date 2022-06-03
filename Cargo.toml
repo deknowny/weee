@@ -25,4 +25,3 @@ pre-commit = "0.5.2"
 
 [package.metadata.precommit]
 fmt = "cargo fmt"
-fix = "cargo fix --allow-dirty"

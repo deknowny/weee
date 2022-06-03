@@ -16,9 +16,6 @@ pub struct ProfileConfig {
     pub scripts: Option<Scripts>,
 }
 
-
-
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Part {
     pub value: IntegerOrString<u64>,

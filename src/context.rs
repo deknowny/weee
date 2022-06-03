@@ -217,28 +217,6 @@ impl<'rtctx> ProfileContext<'rtctx> {
         }
     }
 
-    // pub fn check_factories(&self) -> CmdResult {
-    //     for (part_name, part_info) in self.profile_model.parts.iter().rev() {
-    //         match part_info.factory.name.as_str() {
-    //             // No checks for increment factory
-    //             "increment" => (),
-
-    //             // Loop factory should have a paylaod as array of u64 or strings
-    //             "loop" => match part_info.factory.payload {
-    //                 None => show_err!(
-    //                     [FactoryNeedsPayload]
-    //                     => "Loop factory needs a payload that's been iterated over. Add it like `factory.payload = [\"alpha\", \"beta\"]`"
-    //                 ),
-    //                 Some(payload) => match payload {
-
-    //                 }
-    //             }
-
-    //         }
-    //     }
-    //     Ok(())
-    // }
-
     fn insert_version_into_string(&self, string: String, version: Version) -> String {
         let mut new_string = string.clone();
         for (version_part, version_value) in version.iter() {

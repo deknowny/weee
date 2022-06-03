@@ -11,6 +11,7 @@ pub enum ProfileCommands {
     Add(add::Add),
 }
 
+/// Manage your profiles
 #[derive(Debug, clap::Args)]
 pub struct Profile {
     #[clap(subcommand)]

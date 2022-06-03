@@ -5,6 +5,7 @@ use crate::config::IntegerOrString;
 use crate::context::RTContext;
 use crate::handleable::{CmdResult, Handleable};
 
+/// Bump profile's version to next generation of given part
 #[derive(Debug, clap::Args)]
 pub struct Bump {
     #[clap(required = true)]

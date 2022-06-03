@@ -6,11 +6,15 @@ use linked_hash_map::LinkedHashMap;
 use crate::context::{RTContext, ChangedVersion};
 use crate::handleable::{CmdResult, Handleable};
 
+/// Move profile's version to custom value
 #[derive(Debug, clap::Args)]
 pub struct Move {
+    /// Profile that would be used
     #[clap(required = true)]
     profile: String,
 
+    /// Do not any changes in files,
+    /// only show how it would be changed
     #[clap(long)]
     read_only: bool,
 }

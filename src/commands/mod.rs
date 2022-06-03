@@ -28,11 +28,20 @@ impl Handleable for Commands {
         }
     }
 }
+// TODO: link to docs
 
+/// Change versions in many files automatically.
+/// It's useful when a same-meaning version used as a literal in many files
+/// so when you want to update it you can accidentally miss a files
+/// and it causes nasty stops before releasing. This tool solves the problem.
+/// Just create a profile (every profile is responsible for different-meaning versions
+/// i.e. the project version, a dependency version or a language version)
+/// and then use `bump` or `move` commands to update it.
+/// Refer to docs to see more information: <link>.
 #[derive(Debug, clap::Parser)]
 #[clap(
     name = "weee",
-    author, version, about, long_about = None
+    author, version, long_about = None
 )]
 pub struct CLI {
     #[clap(subcommand)]

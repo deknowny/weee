@@ -3,6 +3,7 @@ use clap;
 use crate::context::RTContext;
 use crate::handleable::{CmdResult, Handleable};
 
+/// Initilize .weee folder in new project
 #[derive(Debug, clap::Args)]
 pub struct Init {
     #[clap(long, short)]

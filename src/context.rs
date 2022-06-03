@@ -657,7 +657,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
                                     => "An error occured while executing subproccess",
                                     stderr=stderr_output,
                                     command=cmd_name
-                                )
+                                );
                             }
                         }
                     };

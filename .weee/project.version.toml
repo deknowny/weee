@@ -1,35 +1,37 @@
 [parts.major]
-value = 32
-factory.payload = { default = 0 }
+value = 0
 factory.name = "increment"
 
 
 [parts.minor]
-value = 0
-factory.payload = { default = 0 }
+value = 1
 factory.name = "increment"
 
 
 [parts.patch]
-value = 0
+value = 6
 factory.name = "increment"
 
 
-[parts.stage]
-value = "alpha"
-factory.name = "loop"
-factory.payload = ["alpha", "beta"]
+[[files."Cargo.toml"]]
+version.view = "{major}.{minor}.{patch}"
+version.placement = "version = \"{version}\""
 
-
-[parts.step]
-value = 0
-factory.payload = { default = 0 }
-factory.name = "increment"
-
-[[files."req.txt"]]
-version.view = "{major}.{minor}.{patch}-{stage}{step}"
-version.placement = "foobar=={version}"
 
 [hooks.afterwords]
-"Echo something" = ["echo", "!ASK:Enter what to echo"]
-"Echo version" = ["echo", "!FORMAT:New version is: {new.major}.{new.minor}.{new.patch}"]
+"Add files for commit" = ["git", "add", "--all"]
+"Commit bumping" = [
+    "git",
+    "commit",
+    "-m",
+    "!FORMAT:Bump version {old.major}.{old.minor}.{old.patch} => {new.major}.{new.minor}.{new.patch}",
+    "--no-verify"
+]
+"Add tag to commit" = [
+    "git",
+    "tag",
+    "-a",
+    "!FORMAT:v{new.major}.{new.minor}.{new.patch}",
+    "-m",
+    "!ASK:Enter release message"
+]

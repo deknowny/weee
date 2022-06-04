@@ -1,6 +1,12 @@
 repos:
   - repo: local
     hooks:
+      - id: Preserve files
+        name: Add files to git before formatting
+        entry: git add -u
+        pass_filenames: false
+        language: system
+
       - id: Formatting
         name: Format code style
         entry: cargo fmt

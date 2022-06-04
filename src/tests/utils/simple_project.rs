@@ -26,7 +26,10 @@ impl SimpleProject {
         std::env::set_var("WEEE_PROJECT_PATH", &project_path);
         let options = fs_extra::dir::CopyOptions::new();
 
-        std::fs::remove_dir_all(&project_path).expect("Cannot clear temporary dir");
+        // For non-existed files
+        #[allow(unused_must_use)]
+        std::fs::remove_dir_all(&project_path);
+
         fs_extra::dir::copy(SIMPLE_PROJECT_PATH, &temp_dir, &options)
             .expect("Failed to copy test directory to temporary directory and run tests");
         SimpleProject { path: project_path }

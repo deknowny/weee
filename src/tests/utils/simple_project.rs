@@ -26,8 +26,7 @@ impl SimpleProject {
         std::env::set_var("WEEE_PROJECT_PATH", &project_path);
         let options = fs_extra::dir::CopyOptions::new();
 
-        std::fs::remove_dir_all(&project_path)
-            .expect("Cannot clear temporary dir");
+        std::fs::remove_dir_all(&project_path).expect("Cannot clear temporary dir");
         fs_extra::dir::copy(SIMPLE_PROJECT_PATH, &temp_dir, &options)
             .expect("Failed to copy test directory to temporary directory and run tests");
         SimpleProject { path: project_path }
@@ -63,7 +62,7 @@ impl SimpleProject {
         let pyproject_version = match &pyproject_doc["project"]["version"] {
             toml_edit::Item::Value(val) => match val {
                 toml_edit::Value::String(val) => val,
-                _ => unreachable!("Invalid type for version in pyproject.toml")
+                _ => unreachable!("Invalid type for version in pyproject.toml"),
             },
             _ => unreachable!("Invalid type for version in pyproject.toml"),
         };
@@ -75,4 +74,3 @@ impl SimpleProject {
         }
     }
 }
-

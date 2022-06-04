@@ -656,10 +656,10 @@ impl<'rtctx> ProfileContext<'rtctx> {
                         Ok(cmd) => {
                             let stdout_output = String::from_utf8_lossy(&cmd.stdout);
                             print!("{}", &stdout_output.bright_black());
-                            if cmd.stderr.len() > 0 {
+                            if !cmd.status.success() {
                                 eprintln!(
                                     "{}",
-                                    " \u{1F4A5} Oops! There is an error output too".white()
+                                    " \u{1F4A5} Oops! There is an error".white()
                                 );
                                 let stderr_output = String::from_utf8_lossy(&cmd.stderr);
                                 return show_err!(

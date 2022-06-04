@@ -27,8 +27,7 @@ impl SimpleProject {
         let options = fs_extra::dir::CopyOptions::new();
 
         // For non-existed files
-        #[allow(unused_must_use)]
-        std::fs::remove_dir_all(&project_path);
+        std::fs::remove_dir_all(&project_path).unwrap_or(());
 
         fs_extra::dir::copy(SIMPLE_PROJECT_PATH, &temp_dir, &options)
             .expect("Failed to copy test directory to temporary directory and run tests");

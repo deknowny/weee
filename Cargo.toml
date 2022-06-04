@@ -1,6 +1,6 @@
 [package]
 name = "weee"
-version = "0.1.10"
+version = "0.1.12"
 edition = "2021"
 description = "Advanced version bumper for any project"
 readme = "README.md"

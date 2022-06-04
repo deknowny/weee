@@ -9,7 +9,7 @@ factory.name = "increment"
 
 
 [parts.patch]
-value = 10
+value = 12
 factory.name = "increment"
 
 

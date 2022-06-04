@@ -349,8 +349,8 @@ impl<'rtctx> ProfileContext<'rtctx> {
             std::collections::HashMap::new();
 
         // If a file has beed changed by abother pattern, we should keep new changes
-        let mut changed_files_content: std::collections::HashMap<&String, String>
-            = std::collections::HashMap::new();
+        let mut changed_files_content: std::collections::HashMap<&String, String> =
+            std::collections::HashMap::new();
 
         for file in changed_files.iter() {
             let splited_path: Vec<&str> = file.name.split("/").collect();
@@ -373,7 +373,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
                     Ok(content) => {
                         file_content_string = content;
                         &file_content_string
-                    },
+                    }
                     Err(_err) => {
                         return show_err!(
                             [CannotReadReplacementsFileContent]

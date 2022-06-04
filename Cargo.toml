@@ -19,10 +19,6 @@ colored = "2.0.0"
 terminal_size = "0.1.17"
 
 [dev-dependencies]
-pre-commit = "0.5.2"
 tempfile = "3.3.0"
 fs_extra = "1.2.0"
 serial_test = "0.6.0"
-
-[package.metadata.precommit]
-"Formatting style" = "cargo fmt"

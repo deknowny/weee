@@ -7,6 +7,7 @@ repos:
         entry: git add -u
         pass_filenames: false
         language: system
+
       - id: Formatting
         name: Format code style
         entry: cargo fmt

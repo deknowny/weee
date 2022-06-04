@@ -9,7 +9,7 @@ factory.name = "increment"
 
 
 [parts.patch]
-value = 12
+value = 0
 factory.name = "increment"
 
 
@@ -19,7 +19,7 @@ version.placement = "version = \"{version}\""
 
 
 [hooks.afterwords]
-"Run test" = ["cargo", "test"]
+"Run tests" = ["cargo", "test"]
 "Add files for commit" = ["git", "add", "--all"]
 "Commit bumping" = [
     "git",

@@ -657,10 +657,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
                             let stdout_output = String::from_utf8_lossy(&cmd.stdout);
                             print!("{}", &stdout_output.bright_black());
                             if !cmd.status.success() {
-                                eprintln!(
-                                    "{}",
-                                    " \u{1F4A5} Oops! There is an error".white()
-                                );
+                                eprintln!("{}", " \u{1F4A5} Oops! There is an error".white());
                                 let stderr_output = String::from_utf8_lossy(&cmd.stderr);
                                 return show_err!(
                                     [SubproccessCallFailed]

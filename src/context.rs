@@ -400,7 +400,10 @@ impl<'rtctx> ProfileContext<'rtctx> {
                 return show_err!(
                     [FileDoesNotContainOldVersion]
                     => "Changed files has no old version in it's content",
-                    old_match=&file.old_part
+                    profile=self.profile_name,
+                    file=file.name,
+                    old_match=&file.old_part,
+
                 );
             } else {
                 new_file_content = file_content.replace(&file.old_part, &file.new_part);

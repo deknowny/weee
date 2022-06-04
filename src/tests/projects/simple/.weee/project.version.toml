@@ -1,32 +1,32 @@
 [parts.major]
-value = 32
+value = 14
 factory.payload = { default = 0 }
 factory.name = "increment"
 
 
 [parts.minor]
-value = 0
+value = 23
 factory.payload = { default = 0 }
 factory.name = "increment"
 
 
 [parts.patch]
-value = 0
+value = 5645
 factory.name = "increment"
 
 
 [parts.stage]
-value = "alpha"
+value = "b"
 factory.name = "loop"
-factory.payload = ["alpha", "beta"]
+factory.payload = ["a", "b"]
 
 
 [parts.step]
-value = 0
+value = 3
 factory.payload = { default = 0 }
 factory.name = "increment"
 
 
-[[files."req.txt"]]
-version.view = "{major}.{minor}.{patch}-{stage}{step}"
-version.placement = "foobar=={version}"
+[[files."pyproject.toml"]]
+version.view = "{major}.{minor}.{patch}{stage}{step}"
+version.placement = "project.version = \"{version}\""

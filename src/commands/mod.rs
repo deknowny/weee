@@ -13,7 +13,7 @@ use crate::handleable::{CmdResult, Handleable};
 #[derive(Debug, clap::Subcommand)]
 enum Commands {
     Bump(bump::Bump),
-    Profile(profile::Profile),
+    // Profile(profile::Profile),
     Init(init::Init),
     Move(r#move::Move),
 }
@@ -23,7 +23,7 @@ impl Handleable for Commands {
         match self {
             Self::Bump(inst) => inst.handle(ctx),
             Self::Init(inst) => inst.handle(ctx),
-            Self::Profile(inst) => inst.handle(ctx),
+            // Self::Profile(inst) => inst.handle(ctx),
             Self::Move(inst) => inst.handle(ctx),
         }
     }

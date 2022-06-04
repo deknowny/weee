@@ -1,11 +1,11 @@
 [parts.major]
-value = 0
+value = 6
 factory.payload = { default = 0 }
 factory.name = "increment"
 
 
 [parts.minor]
-value = 1
+value = 0
 factory.name = "increment"
 
 

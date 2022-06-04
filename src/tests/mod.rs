@@ -1,3 +1,3 @@
 pub mod commands;
-pub mod hello;
+pub mod check;
 pub mod utils;

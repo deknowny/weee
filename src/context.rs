@@ -341,14 +341,16 @@ impl<'rtctx> ProfileContext<'rtctx> {
         changed_files: &Vec<ChangedFile>,
         read_only: bool,
     ) -> CmdResult {
-        // One file can have multiply patterns, bbut this function accepts
+        // One file can have multiply patterns, but this function accepts
         // a vector of changes (i.e. applied pattern changing)
-        // So if we count "hits" of filename we can detect what pattern it is
+        // So if we count "hits" of filename we can detect
+        // which pattern of given is now
         let mut filenames_hits: std::collections::HashMap<&String, usize> =
             std::collections::HashMap::new();
 
         // If a file has beed changed by abother pattern, we should keep new changes
-        let mut changed_files_content = std::collections::HashMap::new();
+        let mut changed_files_content: std::collections::HashMap<&String, String>
+            = std::collections::HashMap::new();
 
         for file in changed_files.iter() {
             let splited_path: Vec<&str> = file.name.split("/").collect();
@@ -364,14 +366,14 @@ impl<'rtctx> ProfileContext<'rtctx> {
                     => "No such file to make version replacements"
                 );
             }
-
-            let file_content = match changed_files_content.get(&file.name) {
+            let file_content_string;
+            let file_content = match &changed_files_content.get(&file.name) {
                 Some(content) => content,
                 None => match std::fs::read_to_string(&os_based_file_path) {
                     Ok(content) => {
-                        changed_files_content.insert(&file.name, content);
-                        &changed_files_content[&file.name]
-                    }
+                        file_content_string = content;
+                        &file_content_string
+                    },
                     Err(_err) => {
                         return show_err!(
                             [CannotReadReplacementsFileContent]
@@ -417,6 +419,8 @@ impl<'rtctx> ProfileContext<'rtctx> {
                     );
                 };
             }
+
+            changed_files_content.insert(&file.name, new_file_content);
 
             println!(
                 "[{}]: {} => {}",

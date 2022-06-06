@@ -2,10 +2,8 @@
 
 use std::io::Write;
 
-use clap::Parser;
 use serial_test::serial;
 
-use crate::commands::CLI;
 use crate::tests::utils::simple_project::{SimpleProject, SimpleProjectVersions};
 
 #[cfg(test)]

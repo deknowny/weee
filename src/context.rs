@@ -693,7 +693,7 @@ impl<'rtctx> ProfileContext<'rtctx> {
                     let executed_command = std::process::Command::new(local_args[0].clone())
                         .args(&local_args[1..])
                         .stdout(std::process::Stdio::piped())
-                        .stdout(std::process::Stdio::piped())
+                        .stderr(std::process::Stdio::piped())
                         .output();
 
                     match executed_command {

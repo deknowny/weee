@@ -1,27 +1,27 @@
 [parts.major]
-value = 0
+value = 4
 factory.payload = { default = 0 }
 factory.name = "increment"
 
 
 [parts.minor]
-value = 9
+value = 16
 factory.name = "increment"
 
 
 [parts.patch]
-value = 0
+value = 23
 factory.name = "increment"
 
 
 [parts.stage]
-value = "alpha"
+value = "beta"
 factory.name = "loop"
 factory.payload = ["alpha", "beta"]
 
 
 [parts.step]
-value = 0
+value = 2
 factory.name = "increment"
 
 

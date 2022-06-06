@@ -42,6 +42,7 @@ pub enum Factory {
 pub struct File {
     pub version: FileVersion,
     pub replaces_count: Option<u64>,
+    pub enable_liquid_tempaltes: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -1,2 +1,2 @@
-dep==6.0.0-alpha0
-dep-another-style==6.0
+dep==0.9.0-alpha0
+dep-another-style==0.9

@@ -3,9 +3,11 @@ use std::io::Write;
 
 use colored::Colorize;
 use linked_hash_map::LinkedHashMap;
+use liquid;
+use liquid::model::ScalarCow;
 use toml_edit::Document;
 
-use crate::config::{Factory, IntegerOrString, Part, ProfileConfig};
+use crate::config::{Factory, File, IntegerOrString, Part, ProfileConfig};
 use crate::error::CLIError;
 use crate::handleable::CmdResult;
 use crate::show_err;
@@ -217,22 +219,70 @@ impl<'rtctx> ProfileContext<'rtctx> {
         }
     }
 
-    fn insert_version_into_string(&self, string: String, version: Version) -> String {
-        let mut new_string = string.clone();
-        for (version_part, version_value) in version.iter() {
-            let temp_val_string;
-            new_string = new_string.replace(
-                format!("{{{}}}", version_part).as_str(),
-                match version_value {
-                    IntegerOrString::String(val) => val.as_str(),
-                    IntegerOrString::Integer(val) => {
-                        temp_val_string = (*val).to_string();
-                        temp_val_string.as_str()
-                    }
-                },
-            )
+    fn insert_version_into_string(
+        &self,
+        version: Version,
+        file: &File,
+        file_name: &String,
+    ) -> CmdResult<String> {
+        if file.enable_liquid_tempaltes.unwrap_or_default() {
+            let template = match liquid::ParserBuilder::with_stdlib()
+                .build()
+                .unwrap()
+                .parse(&file.version.view)
+            {
+                Ok(parser) => parser,
+                Err(err) => {
+                    return show_err!(
+                        [InvalidTemplateSyntax]
+                        => "Invalid liquid template syntax",
+                        profile_name=self.profile_name,
+                        file_name=file_name,
+                        template=file.version.view,
+                        error=format!("{}", err)
+
+                    )
+                }
+            };
+
+            let mut globals = liquid::Object::new();
+            for (key, value) in version {
+                globals.insert(
+                    key.into(),
+                    liquid::model::Value::Scalar(match value {
+                        IntegerOrString::Integer(value) => ScalarCow::new(value as i64),
+                        IntegerOrString::String(value) => ScalarCow::new(value.clone()),
+                    }),
+                );
+            }
+            match template.render(&globals) {
+                Ok(output) => Ok(output),
+                Err(err) => show_err!(
+                    [LiquidTemplateRuntimeError]
+                    => "An error occured while rendering a template",
+                    profile_name=self.profile_name,
+                    file_name=file_name,
+                    template=file.version.view,
+                    error=err
+                ),
+            }
+        } else {
+            let mut new_string = file.version.view.clone();
+            for (version_part, version_value) in version.iter() {
+                let temp_val_string;
+                new_string = new_string.replace(
+                    format!("{{{}}}", version_part).as_str(),
+                    match version_value {
+                        IntegerOrString::String(val) => val.as_str(),
+                        IntegerOrString::Integer(val) => {
+                            temp_val_string = (*val).to_string();
+                            temp_val_string.as_str()
+                        }
+                    },
+                )
+            }
+            Ok(new_string)
         }
-        new_string
     }
 
     pub fn prepare_replacemts(
@@ -244,17 +294,19 @@ impl<'rtctx> ProfileContext<'rtctx> {
         for (file_name, file_replacements) in self.profile_model.files.iter() {
             for file_replacement in file_replacements.iter() {
                 let old_version = self.insert_version_into_string(
-                    file_replacement.version.view.clone(),
                     changed_version.old.clone(),
-                );
+                    &file_replacement,
+                    &file_name,
+                )?;
                 let old_part = file_replacement
                     .version
                     .placement
                     .replace("{version}", old_version.as_str());
                 let new_version = self.insert_version_into_string(
-                    file_replacement.version.view.clone(),
                     changed_version.new.clone(),
-                );
+                    &file_replacement,
+                    &file_name,
+                )?;
                 let new_part = file_replacement
                     .version
                     .placement

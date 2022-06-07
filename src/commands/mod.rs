@@ -37,7 +37,7 @@ impl Handleable for Commands {
 /// Just create a profile (every profile is responsible for different-meaning versions
 /// i.e. the project version, a dependency version or a language version)
 /// and then use `bump` or `move` commands to update it.
-/// Refer to docs to see more information: <link>.
+/// Refer to the repo to see more information: https://github.com/deknowny/weee.
 #[derive(Debug, clap::Parser)]
 #[clap(
     name = "weee",

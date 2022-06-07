@@ -29,17 +29,11 @@ And when releasing a new version of the project, it's required to __bump__ a ver
 
 So, adding this:
 ```python
-# mylib/__init__.py`
-__version__ = "0.1.0"
-
-def add(a, b):
-    return a + b
-
 def sub(a, b):
     return a - b
 ```
 
-means the version now should be bumped from `0.1.0` to `0.2.0`, so the content of `pyproject.toml` and `__init__.py` should be changed too
+Means the version now should be bumped from `0.1.0` to `0.2.0` everywhere, so the content of `pyproject.toml` and `__init__.py` should be changed too
 
 ```toml
 # pyproject.toml

@@ -23,3 +23,27 @@ jobs:
         with:
           command: test
           args: --release
+
+  deploy:
+    name: Deploy to crates
+    if: "startsWith(github.ref, 'refs/tags/')"
+    needs: [ tests ]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: publish
+          args: ${{ secrets.CRATES_IO_API_TOKEN }}
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: package
+          args: --dry-run
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: publish

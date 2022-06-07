@@ -46,13 +46,6 @@ means the version now should be bumped from `0.1.0` to `0.2.0`, so the content o
 [project]
 version = "0.1.0"
 ```
-`mylib/__init__.py` content:
-```python
-__version__ = "0.2.0"
-
-def add(a, b):
-    return a + b
-```
 ```python
 # mylib/__init__.py`
 __version__ = "0.2.0"

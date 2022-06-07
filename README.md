@@ -4,7 +4,7 @@
 `Weee` is version bumper CLI written in Rust for automation version updating process
 
 ## Live demo
-![Live demo example](./assets/live-demo.mov)
+![Live demo example](./assets/live-demo.gif)
 
 ## Installation
 The simplest way is installing from [crates.io page](https://crates.io/crates/rand) with [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html):

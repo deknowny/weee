@@ -28,6 +28,7 @@ jobs:
     name: Deploy to crates
     if: "startsWith(github.ref, 'refs/tags/')"
     needs: [ tests ]
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1

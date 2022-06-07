@@ -15,7 +15,7 @@ impl Handleable for Init {
         ctx.create_weee_dir()?;
         let profile_name = match &self.profile {
             Some(name) => name.as_str(),
-            None => "main",
+            None => "project",
         };
         ctx.create_weee_profile(profile_name)?;
         Ok(())
